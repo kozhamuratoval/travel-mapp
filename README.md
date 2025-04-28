@@ -79,3 +79,8 @@ Backend: Node.js, Express (API для хранения статусов).
 
 Аудиофайлы должны быть в папке audio.
 
+
+## ВИДЕО СОДЕРЖИТСЯ ПОД ФАЙЛОМ "music player n!.MOV" И "FINAL.VIDEO n!.MP4"
+
+
+
