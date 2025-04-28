@@ -19,7 +19,19 @@
             <button id="removeBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">Remove Status</button>
         </div>
         <div id="map"></div>
+
+        
+        <div class="mt-4">
+            <h2 class="text-xl font-bold mb-2">Travel Statistics</h2>
+            <p id="visitedCount">Visited: 0 countries</p>
+            <p id="plannedCount">Planned: 0 countries</p>
+            <p id="worldCoverage">World Coverage: 0%</p>
+        </div>
     </div>
+
+    <audio id="kazakhstanMusic" src="audio/kazakhstan-folk.mp3"></audio>
+    <audio id="russiaMusic" src="audio/russia-folk.mp3"></audio>
+    <audio id="chinaMusic" src="audio/china-folk.mp3"></audio>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-providers@1.13.0/leaflet-providers.js"></script>
@@ -32,6 +44,16 @@
         const defaultUserId = "defaultUser";
         let selectedStatus = null;
         let geoJsonLayer = null;
+        let currentAudio = null;
+        let totalCountries = 0;
+
+        const kazakhstanMusic = document.getElementById('kazakhstanMusic');
+        const russiaMusic = document.getElementById('russiaMusic');
+        const chinaMusic = document.getElementById('chinaMusic');
+
+        const visitedCountEl = document.getElementById('visitedCount');
+        const plannedCountEl = document.getElementById('plannedCount');
+        const worldCoverageEl = document.getElementById('worldCoverage');
 
         document.getElementById('visitedBtn').addEventListener('click', () => selectedStatus = 'visited');
         document.getElementById('plannedBtn').addEventListener('click', () => selectedStatus = 'planned');
@@ -45,10 +67,21 @@
                 console.log('Fetched country statuses:', countryStatuses);
                 if (geoJsonLayer) map.removeLayer(geoJsonLayer);
                 await loadMap(countryStatuses);
+                updateStatistics(countryStatuses);
             } catch (error) {
                 console.error('Error loading user data:', error);
                 alert('Error loading user data: ' + error.message);
             }
+        }
+
+        function updateStatistics(countryStatuses) {
+            const visitedCount = Object.values(countryStatuses).filter(status => status === 'visited').length;
+            const plannedCount = Object.values(countryStatuses).filter(status => status === 'planned').length;
+            const worldCoverage = totalCountries > 0 ? ((visitedCount / totalCountries) * 100).toFixed(1) : 0;
+
+            visitedCountEl.textContent = `Visited: ${visitedCount} countries`;
+            plannedCountEl.textContent = `Planned: ${plannedCount} countries`;
+            worldCoverageEl.textContent = `World Coverage: ${worldCoverage}%`;
         }
 
         async function loadMap(countryStatuses) {
@@ -57,6 +90,10 @@
                 if (!response.ok) throw new Error('Failed to fetch GeoJSON');
                 const data = await response.json();
                 console.log('GeoJSON loaded, rendering map...');
+
+               
+                totalCountries = data.features.length;
+                console.log('Total countries:', totalCountries);
 
                 geoJsonLayer = L.geoJSON(data, {
                     style: function(feature) {
@@ -82,11 +119,36 @@
                     },
                     onEachFeature: function(feature, layer) {
                         layer.on('click', async function() {
+                            const isoCode = feature.properties.iso_a2;
+
+                            if (currentAudio) {
+                                currentAudio.pause();
+                                currentAudio.currentTime = 0;
+                            }
+
+                            let audioToPlay = null;
+                            if (isoCode === 'KZ') { 
+                                audioToPlay = kazakhstanMusic;
+                            } else if (isoCode === 'RU') { 
+                                audioToPlay = russiaMusic;
+                            } else if (isoCode === 'CN') { 
+                                audioToPlay = chinaMusic;
+                            }
+
+                            if (audioToPlay) {
+                                currentAudio = audioToPlay;
+                                currentAudio.play();
+                                setTimeout(() => {
+                                    currentAudio.pause();
+                                    currentAudio.currentTime = 0;
+                                }, 5000); // Stop after 5 seconds
+                            }
+
                             if (!selectedStatus) {
                                 alert('Please select a status first!');
                                 return;
                             }
-                            const isoCode = feature.properties.iso_a2;
+
                             console.log(`Clicked country with ISO: ${isoCode}, applying status: ${selectedStatus}`);
                             try {
                                 let response;
@@ -116,7 +178,10 @@
                 alert('Error loading map: ' + error.message);
             }
         }
+
         loadUserData();
     </script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93764a0a7a15bfa7',t:'MTc0NTg0MDQ3Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');
+    a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
